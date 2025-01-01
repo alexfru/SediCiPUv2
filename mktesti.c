@@ -728,6 +728,11 @@ enum
   li16(r3, 0x7777), expect_r16(r3, 0x7777),
   li16(r4, 0x9999), expect_r16(r4, 0x9999),
   li16(r5, 0xBBBB), expect_r16(r5, 0xBBBB),
+
+  // Now also use lurpc...
+  lurpc(r0, 0x123),
+  addi(r1, pc, -2), addu(r1, 0x123),
+  cmp(r0, r1), expect_e(),
 #endif
 
 #if 01
@@ -1169,6 +1174,37 @@ enum
   expect_r16(r2, 0x0002),
   cmp(r5, r3),
   expect_e(),
+#endif
+
+#if 01
+  // Some more load/store tests...
+  addi(sp, sp, -2),
+  li(r0, -256),
+  sw(r0, sp, 0),
+  mov(r0, sp),
+  lb(r1, sp, 0), expect_r16(r1, 0x0000),
+  lb(r2, r0, 1), expect_r16(r2, 0x00FF),
+  sb(r1, sp, 1),
+  sb(r2, r0, 0),
+  lb(r1, sp, 0), expect_r16(r1, 0x00FF),
+  lb(r2, r0, 1), expect_r16(r2, 0x0000),
+#if !MINI
+  addi(r5, sp, -3),
+  li(r3, 3),
+  li(r4, 4),
+  lb2(r2, r5, r3), expect_r16(r2, 0x00FF),
+  lb2(r1, r5, r4), expect_r16(r1, 0x0000),
+  sb2(r2, r5, r4),
+  sb2(r1, r5, r3),
+  lb2(r2, r5, r3), expect_r16(r2, 0x0000),
+  lb2(r1, r5, r4), expect_r16(r1, 0x00FF),
+
+  lw2(r2, r5, r3), expect_r16(r2, 0xFF00),
+  neg(r2),
+  sw2(r2, r5, r3),
+  lw2(r1, r5, r3), expect_r16(r1, 0x0100),
+#endif
+  addi(sp, sp, 2),
 #endif
 
 #if 01

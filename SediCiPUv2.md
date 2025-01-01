@@ -9,6 +9,119 @@ This text is licensed under a [Creative Commons Attribution
 4.0 International license.](https://creativecommons.org/)
 
 
+## Table of contents
+
+[1 Intro](#1-intro)
+
+[2 ISA features at a glance](#2-isa-features-at-a-glance)
+
+[3 Registers](#3-registers)
+
+[4 Instruction set](#4-instruction-set)
+
+[4.1 Instruction descriptions](#41-instruction-descriptions)
+
+[4.1.1 Memory loads and stores: lb, lw, sb, sw](#411-memory-loads-and-stores-lb-lw-sb-sw)
+
+[4.1.2 Stack loads and stores: pop, push, ls5r, ss5r](#412-stack-loads-and-stores-pop-push-ls5r-ss5r)
+
+[4.1.3 Other memory instructions: addm, subm, incm, decm, dincm, ddecm](#413-other-memory-instructions-addm-subm-incm-decm-dincm-ddecm)
+
+[4.1.4 Non-memory data moves: li, mov, add, m2f, mf2](#414-non-memory-data-moves-li-mov-add-m2f-mf2)
+
+[4.1.5 Carry flag manipulation: stc](#415-carry-flag-manipulation-stc)
+
+[4.1.6 Single-register ALU operations: zxt, sxt, cpl, neg, adcz](#416-single-register-alu-operations-zxt-sxt-cpl-neg-adcz)
+
+[4.1.7 Regular ALU: add, addu, adc, sub, sbb, cmp, and, or, xor](#417-regular-alu-add-addu-adc-sub-sbb-cmp-and-or-xor)
+
+[4.1.8 Shifts and rotates: sr, sl, asr, rl, rr](#418-shifts-and-rotates-sr-sl-asr-rl-rr)
+
+[4.1.9 Address formation: lurpc](#419-address-formation-lurpc)
+
+[4.1.10 Multiplication and division: sac, add22adc33, cadd24, cadd24adc3z, csub34](#4110-multiplication-and-division-sac-add22adc33-cadd24-cadd24adc3z-csub34)
+
+[4.1.11 Jumps, nop, subroutines](#4111-jumps-nop-subroutines)
+
+[4.1.12 Interrupts: swi, external/HW ints, reti, di, ei](#4112-interrupts-swi-externalhw-ints-reti-di-ei)
+
+[4.1.13 Logical to physical mapping/translation](#4113-logical-to-physical-mappingtranslation)
+
+[4.2 Code examples](#42-code-examples)
+
+[4.2.1 Loading a 16-bit const](#421-loading-a-16-bit-const)
+
+[4.2.2 Adding a 16-bit const](#422-adding-a-16-bit-const)
+
+[4.2.3 Multiplying by a constant (using "shift and accumulate")](#423-multiplying-by-a-constant-using-shift-and-accumulate)
+
+[4.2.4 8-bit rotation](#424-8-bit-rotation)
+
+[4.2.5 Clearing low bits while preserving high bits](#425-clearing-low-bits-while-preserving-high-bits)
+
+[4.2.6 Resetting Carry flag](#426-resetting-carry-flag)
+
+[4.2.7 Setting Carry flag](#427-setting-carry-flag)
+
+[4.2.8 Loading/storing with larger offset/immediate, unaligned load/store](#428-loadingstoring-with-larger-offsetimmediate-unaligned-loadstore)
+
+[4.2.9 Jump (unconditional) with larger distance and indirection](#429-jump-unconditional-with-larger-distance-and-indirection)
+
+[4.2.10 Jump and link with larger distance and indirection](#4210-jump-and-link-with-larger-distance-and-indirection)
+
+[4.2.11 Conditional jump with larger distance](#4211-conditional-jump-with-larger-distance)
+
+[4.2.12 16-bit multiplication](#4212-16-bit-multiplication)
+
+[4.2.13 Widening unsigned 16-bit multiplication](#4213-widening-unsigned-16-bit-multiplication)
+
+[4.2.14 Unsigned 16-bit division and modulo/remainder](#4214-unsigned-16-bit-division-and-moduloremainder)
+
+[4.2.15 16-bit binary to decimal conversion](#4215-16-bit-binary-to-decimal-conversion)
+
+[4.2.16 Subroutine prolog and epilog](#4216-subroutine-prolog-and-epilog)
+
+[4.2.17 ISRs](#4217-isrs)
+
+[4.2.17.1 Hardware ISRs](#42171-hardware-isrs)
+
+[4.2.17.2 Software ISRs](#42172-software-isrs)
+
+[4.3 Instruction encodings](#43-instruction-encodings)
+
+[4.3.1 Overall encodings](#431-overall-encodings)
+
+[4.3.2 Further encodings in special cases](#432-further-encodings-in-special-cases)
+
+[4.3.2.1 addm dst, (src + ximm7)](#4321-addm-dst-src--ximm7)
+
+[4.3.2.2 subm dst, (src + ximm7)](#4322-subm-dst-src--ximm7)
+
+[4.3.2.3 mrs r, s](#4323-mrs-r-s)
+
+[4.4 Instruction set summary](#44-instruction-set-summary)
+
+[4.5 The mini](#45-the-mini)
+
+[4.5.1 Overall mini encodings](#451-overall-mini-encodings)
+
+[4.5.2 What didn't make it into the mini](#452-what-didnt-make-it-into-the-mini)
+
+[5 Memory accesses](#5-memory-accesses)
+
+[5.1 Logical and physical addresses](#51-logical-and-physical-addresses)
+
+[5.2 Program/code and data spaces](#52-programcode-and-data-spaces)
+
+[5.3 Mapping/translation](#53-mappingtranslation)
+
+[5.4 Multitasking](#54-multitasking)
+
+[6 Proposed ABI](#6-proposed-abi)
+
+[7 Proposed assembler macro instructions](#7-proposed-assembler-macro-instructions)
+
+
 ## 1 Intro
 
 This non-pipelined 16-bit architecture is relatively simple and
@@ -33,13 +146,15 @@ keyboard input and non-volatile storage, maybe a serial port, too.
 - byte and word memory addressing (16-bit words naturally aligned,
   little-endian)
 - memory addresses in loads/stores: register+immediate, register+register
-  (both forms include pc-relative addressing)
+  (both forms include pc-relative addressing, helping create position-
+  independent code)
 - 8 memory selector registers to map/translate logical addresses to physical
   memory addresses (64KB program/code space and 64KB data space can be mapped
   independently to anywhere in a maximum of 4MB of physical RAM in blocks
   of 16KB)
 - composable load, store, jump instructions for full 16-bit range of
-  value/address/distance
+  value/address/distance (possibly with pc-relative addressing, also helping
+  create position-independent code)
 - common binary ALU ops on register & register, register & immediate (with
   few exceptions): add, adc, sub, sbb, cmp, and, or, xor, sr, sl, rr, rl, asr
 - common unary ALU ops: zxt, sxt, cpl, neg, also adcz
@@ -436,6 +551,8 @@ None of these instructions can shift/rotate sp or pc.
   immediately following instruction (that is, original pc + 2) and stores
   the sum in the specified register.
 
+  This instruction helps create position-independent code.
+
   The register cannot be sp or pc.
 
   Preserves flags.
@@ -584,7 +701,7 @@ None of these instructions can shift/rotate sp or pc.
   3. Sign-extends the 6-bit immediate, doubles it and loads it into pc.
 
   The ISR that the instruction invokes should decrement sp by 2 (or more if
-  necessary) with `add sp, sp, -2` (which, btw, preserves the arithmetic
+  necessary) with `add sp, sp, -2` (which, BTW, preserves the arithmetic
   flags) before enabling interrupts or pushing anything onto the stack.
 
   Because the return address is stored on the stack, interrupts can be
@@ -764,7 +881,7 @@ When the constant has just a few one bits:
 - `xor r4, r4` ; zeroes r4, carry=overflow=sign=0, zero=1
 
 
-#### 4.2.7  Setting Carry flag
+#### 4.2.7 Setting Carry flag
 
 Options other than `stc`:
 
@@ -1036,7 +1153,7 @@ a microarchitectural artifact, which may often be handy.
 ##### 4.2.17.1 Hardware ISRs
 
 The generic prolog/entry point in a hardware ISR should look like this
-(btw, this code should be at pc=0x3E since there's one common entry point
+(BTW, this code should be at pc=0x3E since there's one common entry point
 for all external/hardware ISRs):
 
     ; Save regs on stack. N.B. return address is at sp-2.
@@ -1401,8 +1518,8 @@ mini is much smaller, 2KB compared to 16KB of the full/maximum ISA.
     111rrr???0114444 sr               rrr, imm4 ; when imm4!=0
     111??????0110000   reti                     ; when imm4==0 ; returns from ISR, restoring interrupt enable/disable
     111rrr???1114444 sl               rrr, imm4       ; when 2<=imm4<=15
-    111rrrRRR1110000   lw             rrr, (pc + RRR) ; when imm4==0 ; lw in program/code space
-    111rrrRRR1110001   sw             rrr, (pc + RRR) ; when imm4==1 ; sw in program/code space
+    111rrrRRR1110000   lw/lwp         rrr, (RRR + pc) ; when imm4==0 ; lw in program/code space
+    111rrrRRR1110001   sw/swp         rrr, (RRR + pc) ; when imm4==1 ; sw in program/code space
 
 Jump conditions 0 through 13:
 
@@ -1450,16 +1567,16 @@ MULDIVHELPER op/rrr 0 through 3:
 
 What's not in the mini:
 
-- `ei` and `di` instructions. Their funcionality is implemented through
+- `ei` and `di` instructions. Their functionality is implemented through
   dedicated ISRs and relies on the `swi` and `reti` instructions, which
   save and restore the external/hardware interrupt enable flag to/from the
   stack, where it can be accessed.
 - Addressing data on the stack relative to `sp` through
   `lb/lw/sb/sw r, (sp + imm7)` is only half-range:
-  `lb/lw/sb/sw r, (sp + simm7)`, that is, the immeidate is always signed
+  `lb/lw/sb/sw r, (sp + simm7)`, that is, the immediate is always signed
   and doesn't become unsigned when used in combination with `sp`.
-- `lb/lw/sb/sw r, (r + r)` are limited to only `lw/sw r, (pc + r)`, AKA
-  `lwp r, r` and `swp r, r`.
+- `lb/lw/sb/sw r, (r + r)` are limited to only `lw/sw r, (r + pc)`, AKA
+  `lwp/swp r, r`.
 - `addm` and `subm` instructions.
 - `(d)incm/(d)decm` are limited to only `decm/decs r, (sp + simm7)`.
 - `ls5r` and `ss5r` instructions.
@@ -1643,9 +1760,9 @@ Prerequisites:
   is in macro mode
 - special kind of value supported, VAL, which may be one of the following:
   - symbol address in code/data
-  - 16-bit constant (when const is target of pc-rel instr, distinct
-    relocation type needed to distinguish constant target from constant
-    distance)
+  - 16-bit constant (when the constant is the target of a pc-relative
+    instruction, a distinct relocation type is needed to distinguish
+    the constant target from the constant distance)
   - sum of the two above
 
 Proposed macro instructions:
